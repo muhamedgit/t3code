@@ -1,3 +1,11 @@
+<!-- SentinelDev fork notice -->
+
+> **SentinelDev** is an **unofficial personal fork** of [T3 Code](https://github.com/pingdotgg/t3code).
+> It is **not affiliated with, endorsed by, or an official version of** T3 Tools, Inc. "T3 Code", its
+> wordmark, and its logos are trademarks of T3 Tools, Inc.; this fork ships under its own **SentinelDev**
+> name and branding in line with the upstream [trademark policy](./TRADEMARK.md). Build plan:
+> [`SENTINELDEV_PLAN.md`](./SENTINELDEV_PLAN.md).
+
 <p align="center">
   <a href="https://t3.codes">
     <img src="./assets/prod/t3-black-web-icon-192x192.png" width="80" height="80" alt="T3 Code logo" />
