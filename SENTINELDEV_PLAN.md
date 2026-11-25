@@ -175,18 +175,17 @@ Each phase is shippable and crosses all required surfaces for what it introduces
 - _Acceptance:_ create board + tickets + sprint via a test/dev RPC; second connected client sees the
   change live; restart replays projection.
 
-### Phase 2 — Agent MCP toolkit (`apps/server/src/mcp/toolkits/board/`)
+### Phase 2 — Agent MCP toolkit (`apps/server/src/mcp/toolkits/board/`) ✅
 
-- `tools.ts` + `handlers.ts` modeled on `toolkits/issues/` (which depends on `IssueService`,
-  `Orchestrator`, `ProjectService`, `ThreadIssueService`). Tools (all backed by `BoardService`):
-  `board_list` (current project or named), `ticket_create`, `ticket_update`, `ticket_move`
-  (status/sprint/order), `ticket_link` (thread/PR), `ticket_archive`, `sprint_create`,
-  `sprint_set_state`. Default target = the caller's thread's project (same ergonomics as
-  `IssueTargetInput`).
-- Register the toolkit in `apps/server/src/mcp/McpHttpServer.ts` alongside the others.
-- Presentation entries in `packages/shared/src/t3McpToolPresentation.ts`.
-- **Tests:** `handlers.test.ts` mirroring `toolkits/issues/handlers.test.ts`.
-- _Acceptance:_ an agent thread can create/move/link a ticket; it appears on all clients instantly.
+- Tools: `read_board`, `create_ticket`, `update_ticket`, `move_ticket` (status/sprint/order),
+  `link_ticket` (threads/PRs; with nothing named, links the caller's thread), `archive_ticket`,
+  `create_sprint`, `update_sprint` (incl. state). Default target = the caller thread's project.
+- Gated by a new `board` MCP capability, granted to agent threads and owner OAuth clients.
+- Handlers write through the **server-wide `BoardHub`** (provided once in `server.ts`), so an agent's
+  change reaches every open client's `board.subscribe` stream.
+- Registered in `McpHttpServer.ts`; tests in `handlers.test.ts` run against a real hub on in-memory SQLite.
+- **Moved to Phase 3:** presentation entries in `packages/shared/src/t3McpToolPresentation.ts`
+  (they need summary cases in `client-runtime/t3ToolSummary.ts` + web/mobile translations).
 
 ### Phase 3 — Web UI (desktop inherits)
 

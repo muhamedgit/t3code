@@ -24,6 +24,7 @@ const ALL_MCP_CAPABILITIES = [
   "device",
   "pull-requests",
   "issues",
+  "board",
   "background-wait",
 ] as const;
 export type McpCapability = (typeof ALL_MCP_CAPABILITIES)[number];
