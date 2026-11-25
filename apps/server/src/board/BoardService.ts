@@ -98,7 +98,12 @@ function mergeLinks(
   return { threads, pullRequests };
 }
 
-/** End-of-column order: one past the current maximum, so a new/moved ticket lands last. */
+/** Column order: position first, then age, so tickets that share a position keep a stable order. */
+function byColumnOrder(a: TicketRow, b: TicketRow): number {
+  return a.order - b.order || a.createdAt.localeCompare(b.createdAt);
+}
+
+/** End-of-column order: one past the current maximum, so a new ticket lands last. */
 function nextOrder(rows: ReadonlyArray<{ readonly order: number }>): number {
   return rows.reduce((max, row) => Math.max(max, row.order + 1), 0);
 }
@@ -238,18 +243,29 @@ const make = Effect.gen(function* () {
     return next;
   });
 
+  /**
+   * A column is one status within one sprint (or the backlog). `order` is the ticket's position in
+   * its destination column; that column is renumbered so positions stay dense. A ticket moved to
+   * another column without a position lands last.
+   */
   const moveTicket = Effect.fn("BoardService.moveTicket")(function* (input: TicketMoveInput) {
     const current = yield* requireTicket(input.ticketId);
+    const status = input.status ?? current.status;
+    const sprintId = input.sprintId === undefined ? current.sprintId : input.sprintId;
+    const changesColumn = status !== current.status || sprintId !== current.sprintId;
+    if (input.order === undefined && !changesColumn) return current;
     const now = yield* nowIso;
-    const next: TicketRow = {
-      ...current,
-      ...(input.status === undefined ? {} : { status: input.status }),
-      ...(input.sprintId === undefined ? {} : { sprintId: input.sprintId }),
-      ...(input.order === undefined ? {} : { order: input.order }),
-      updatedAt: now,
-    };
-    yield* store.upsertTicket(next);
-    return next;
+    const siblings = (yield* store.listTickets(current.boardId))
+      .filter((t) => t.id !== current.id && t.status === status && t.sprintId === sprintId)
+      .toSorted(byColumnOrder);
+    const index = Math.min(input.order ?? siblings.length, siblings.length);
+    const moved: TicketRow = { ...current, status, sprintId, order: index, updatedAt: now };
+    const column = [...siblings.slice(0, index), moved, ...siblings.slice(index)];
+    for (const [order, ticket] of column.entries()) {
+      if (ticket === moved || ticket.order !== order)
+        yield* store.upsertTicket({ ...ticket, order });
+    }
+    return moved;
   });
 
   const linkTicket = Effect.fn("BoardService.linkTicket")(function* (input: TicketLinkInput) {

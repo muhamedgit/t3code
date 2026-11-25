@@ -144,7 +144,11 @@ export const TicketMoveInput = Schema.Struct({
   ticketId: TicketId,
   status: Schema.optional(TicketStatus),
   sprintId: Schema.optional(Schema.NullOr(SprintId)),
-  order: Schema.optional(NonNegativeInt),
+  order: Schema.optional(
+    NonNegativeInt.annotate({
+      description: "Position in the destination column, 0 first. Omit to keep it, or go last.",
+    }),
+  ),
 });
 export type TicketMoveInput = typeof TicketMoveInput.Type;
 
