@@ -395,6 +395,10 @@
       "types": "./src/state/shell.ts",
       "default": "./src/state/shell.ts"
     },
+    "./state/board": {
+      "types": "./src/state/board.ts",
+      "default": "./src/state/board.ts"
+    },
     "./state/issue-trackers": {
       "types": "./src/state/issueTrackers.ts",
       "default": "./src/state/issueTrackers.ts"

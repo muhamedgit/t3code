@@ -224,6 +224,22 @@ import {
   ThreadIssueKey,
 } from "./issue.ts";
 import {
+  Board,
+  BoardEnsureInput,
+  BoardRpcError,
+  BoardState,
+  BoardSubscribeInput,
+  Sprint,
+  SprintCreateInput,
+  SprintUpdateInput,
+  Ticket,
+  TicketArchiveInput,
+  TicketCreateInput,
+  TicketLinkInput,
+  TicketMoveInput,
+  TicketUpdateInput,
+} from "./board.ts";
+import {
   GuestShareCreateError,
   GuestShareCreateInput,
   GuestShareCreateResult,
@@ -742,6 +758,16 @@ export const WS_METHODS = {
   subscribeServerLifecycle: "subscribeServerLifecycle",
   subscribeAuthAccess: "subscribeAuthAccess",
   subscribeResourceTelemetry: "subscribeResourceTelemetry",
+
+  boardSubscribe: "board.subscribe",
+  boardEnsure: "board.ensure",
+  boardTicketCreate: "board.ticketCreate",
+  boardTicketUpdate: "board.ticketUpdate",
+  boardTicketMove: "board.ticketMove",
+  boardTicketLink: "board.ticketLink",
+  boardTicketArchive: "board.ticketArchive",
+  boardSprintCreate: "board.sprintCreate",
+  boardSprintUpdate: "board.sprintUpdate",
 } as const;
 
 const WsServerUpsertKeybindingRpc = Rpc.make(WS_METHODS.serverUpsertKeybinding, {
@@ -2470,6 +2496,53 @@ const WsSubscribeResourceTelemetryRpc = Rpc.make(WS_METHODS.subscribeResourceTel
   stream: true,
 });
 
+const WsBoardSubscribeRpc = Rpc.make(WS_METHODS.boardSubscribe, {
+  payload: BoardSubscribeInput,
+  success: BoardState,
+  error: BoardRpcError,
+  stream: true,
+});
+const WsBoardEnsureRpc = Rpc.make(WS_METHODS.boardEnsure, {
+  payload: BoardEnsureInput,
+  success: Board,
+  error: BoardRpcError,
+});
+const WsBoardTicketCreateRpc = Rpc.make(WS_METHODS.boardTicketCreate, {
+  payload: TicketCreateInput,
+  success: Ticket,
+  error: BoardRpcError,
+});
+const WsBoardTicketUpdateRpc = Rpc.make(WS_METHODS.boardTicketUpdate, {
+  payload: TicketUpdateInput,
+  success: Ticket,
+  error: BoardRpcError,
+});
+const WsBoardTicketMoveRpc = Rpc.make(WS_METHODS.boardTicketMove, {
+  payload: TicketMoveInput,
+  success: Ticket,
+  error: BoardRpcError,
+});
+const WsBoardTicketLinkRpc = Rpc.make(WS_METHODS.boardTicketLink, {
+  payload: TicketLinkInput,
+  success: Ticket,
+  error: BoardRpcError,
+});
+const WsBoardTicketArchiveRpc = Rpc.make(WS_METHODS.boardTicketArchive, {
+  payload: TicketArchiveInput,
+  success: Ticket,
+  error: BoardRpcError,
+});
+const WsBoardSprintCreateRpc = Rpc.make(WS_METHODS.boardSprintCreate, {
+  payload: SprintCreateInput,
+  success: Sprint,
+  error: BoardRpcError,
+});
+const WsBoardSprintUpdateRpc = Rpc.make(WS_METHODS.boardSprintUpdate, {
+  payload: SprintUpdateInput,
+  success: Sprint,
+  error: BoardRpcError,
+});
+
 export class RpcScopeAuthorization extends RpcMiddleware.Service<RpcScopeAuthorization>()(
   "t3/contracts/RpcScopeAuthorization",
   { error: EnvironmentAuthorizationError },
@@ -2735,4 +2808,13 @@ export const WsRpcGroup = RpcGroup.make(
   WsOrchestrationV2SubscribeThreadRpc,
   WsOrchestrationV2SubscribeCommandOutputRpc,
   WsOrchestrationV2SubscribePromptSuggestionRpc,
+  WsBoardSubscribeRpc,
+  WsBoardEnsureRpc,
+  WsBoardTicketCreateRpc,
+  WsBoardTicketUpdateRpc,
+  WsBoardTicketMoveRpc,
+  WsBoardTicketLinkRpc,
+  WsBoardTicketArchiveRpc,
+  WsBoardSprintCreateRpc,
+  WsBoardSprintUpdateRpc,
 ).middleware(RpcScopeAuthorization);

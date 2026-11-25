@@ -1,4 +1,5 @@
 import { GitCommandError, OrchestrationDispatchCommandError } from "@t3tools/contracts";
+import * as BoardHubMod from "./board/BoardHub.ts";
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- A synchronous digest inside the pure provider mapping.
 import * as NodeCrypto from "node:crypto";
 import * as FeatureFlags from "@t3tools/shared/FeatureFlags";
@@ -1583,6 +1584,7 @@ export const layerWsRpc = (
       const providerMaintenanceRunner = yield* ProviderMaintenanceRunner.ProviderMaintenanceRunner;
       const providerAuth = yield* ProviderAuthService.ProviderAuthService;
       const providerInstallation = yield* ProviderInstallation.ProviderInstallation;
+      const boardHub = yield* BoardHubMod.BoardHub;
       const serverSelfUpdate = yield* ServerSelfUpdate.ServerSelfUpdate;
       const npmRelease = yield* NpmRelease.NpmRelease;
       const config = yield* ServerConfig.ServerConfig;
@@ -2041,6 +2043,24 @@ export const layerWsRpc = (
       });
 
       const handlers = ServerWsRpcGroup.of({
+        [WS_METHODS.boardSubscribe]: (input) =>
+          boardHub.watch(input.projectId).pipe(Stream.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardEnsure]: (input) =>
+          boardHub.ensureBoard(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardTicketCreate]: (input) =>
+          boardHub.createTicket(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardTicketUpdate]: (input) =>
+          boardHub.updateTicket(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardTicketMove]: (input) =>
+          boardHub.moveTicket(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardTicketLink]: (input) =>
+          boardHub.linkTicket(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardTicketArchive]: (input) =>
+          boardHub.archiveTicket(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardSprintCreate]: (input) =>
+          boardHub.createSprint(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
+        [WS_METHODS.boardSprintUpdate]: (input) =>
+          boardHub.updateSprint(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
         [WS_METHODS.issuesList]: (input) => issues.list(input),
         [WS_METHODS.issuesDetail]: (input) => issues.detail(input),
         [WS_METHODS.issuesComments]: (input) => issues.comments(input),
@@ -3807,6 +3827,7 @@ export const layer = Layer.unwrap(
     const npmRelease = yield* NpmRelease.NpmRelease;
     const pullRequests = yield* PullRequestService.PullRequestService;
     const issues = yield* IssueService.IssueService;
+    const boardHub = yield* BoardHubMod.BoardHub;
     const threadIssues = yield* ThreadIssueService.ThreadIssueService;
     const issueTrackers = yield* IssueTrackerConnections.IssueTrackerConnections;
     const reviewGuides = yield* PullRequestReviewGuideService.PullRequestReviewGuideService;
@@ -3907,6 +3928,8 @@ export const layer = Layer.unwrap(
               // Share server-lifetime PR caches so WS mutations invalidate every client's HTTP diffs.
               Layer.provide(Layer.succeed(PullRequestService.PullRequestService, pullRequests)),
               Layer.provide(Layer.succeed(IssueService.IssueService, issues)),
+              // One hub for the server, so every client and agent sees the same board changes.
+              Layer.provide(Layer.succeed(BoardHubMod.BoardHub, boardHub)),
               Layer.provide(Layer.succeed(ThreadIssueService.ThreadIssueService, threadIssues)),
               Layer.provide(
                 Layer.succeed(IssueTrackerConnections.IssueTrackerConnections, issueTrackers),
