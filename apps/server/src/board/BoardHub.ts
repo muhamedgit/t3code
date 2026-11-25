@@ -1,6 +1,7 @@
 import {
   type Board,
   type BoardEnsureInput,
+  BoardRpcError,
   type BoardId,
   type BoardState,
   type ProjectId,
@@ -25,6 +26,13 @@ import * as BoardServiceMod from "./BoardService.ts";
 
 type Err = BoardServiceMod.BoardServiceError;
 
+/** The wire error clients and agents see for a board service failure. */
+export const toBoardRpcError = (error: Err): BoardRpcError =>
+  new BoardRpcError({
+    kind: error._tag === "BoardStoreError" ? "failed" : "not_found",
+    reason: error.message,
+  });
+
 interface BoardChange {
   readonly projectId: ProjectId;
   readonly state: BoardState;
@@ -39,6 +47,8 @@ export class BoardHub extends Context.Service<
   BoardHub,
   {
     readonly watch: (projectId: ProjectId) => Stream.Stream<BoardState, Err>;
+    /** The project's current board, created if it has none. */
+    readonly read: (projectId: ProjectId) => Effect.Effect<BoardState, Err>;
     readonly ensureBoard: (input: BoardEnsureInput) => Effect.Effect<Board, Err>;
     readonly createTicket: (input: TicketCreateInput) => Effect.Effect<Ticket, Err>;
     readonly updateTicket: (input: TicketUpdateInput) => Effect.Effect<Ticket, Err>;
@@ -73,19 +83,27 @@ const make = Effect.gen(function* () {
         ),
       );
 
-  const watch = (projectId: ProjectId) => {
-    const initial = Stream.fromEffect(
-      service.ensureBoard({ projectId }).pipe(
-        Effect.flatMap(() => service.getStateByProject(projectId)),
-        Effect.map(Option.getOrUndefined),
-      ),
-    ).pipe(Stream.filter((state): state is BoardState => state !== undefined));
-    const updates = Stream.fromPubSub(pubsub).pipe(
-      Stream.filter((change) => change.projectId === projectId),
-      Stream.map((change) => change.state),
+  const read = Effect.fn("BoardHub.read")(function* (projectId: ProjectId) {
+    const board = yield* service.ensureBoard({ projectId });
+    const state = yield* service.getState(board.id);
+    return Option.getOrElse(state, (): BoardState => ({ board, sprints: [], tickets: [] }));
+  });
+
+  // Subscribe before reading, so a change landing between the read and the subscription is kept.
+  const watch = (projectId: ProjectId) =>
+    Stream.unwrap(
+      Effect.gen(function* () {
+        const subscription = yield* PubSub.subscribe(pubsub);
+        const current = yield* read(projectId);
+        return Stream.concat(
+          Stream.succeed(current),
+          Stream.fromSubscription(subscription).pipe(
+            Stream.filter((change) => change.projectId === projectId),
+            Stream.map((change) => change.state),
+          ),
+        );
+      }),
     );
-    return Stream.concat(initial, updates);
-  };
 
   const ensureBoard = (input: BoardEnsureInput) =>
     service.ensureBoard(input).pipe(Effect.tap((board) => publish(board.projectId)));
@@ -106,6 +124,7 @@ const make = Effect.gen(function* () {
 
   return BoardHub.of({
     watch,
+    read,
     ensureBoard,
     createTicket,
     updateTicket,
