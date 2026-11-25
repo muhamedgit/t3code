@@ -187,21 +187,31 @@ Each phase is shippable and crosses all required surfaces for what it introduces
 - **Moved to Phase 3:** presentation entries in `packages/shared/src/t3McpToolPresentation.ts`
   (they need summary cases in `client-runtime/t3ToolSummary.ts` + web/mobile translations).
 
-### Phase 3 — Web UI (desktop inherits)
+### Phase 3 — Web UI (desktop inherits) — core done ✅, extras open
 
-- **Full board view:** new route under `apps/web/src/routes` (regenerate `routeTree.gen.ts` via the
-  router codegen). Columns Todo/Doing/Done/Blocked; sprint switcher + Backlog; drag to move
-  (cheap DnD — mind perf); filter by priority/label; ticket card shows key, title, priority,
-  labels, linked-thread/PR chips. Click a chip → open that thread/PR (reuse `linkedThreadSurface.ts`,
-  `sourceControlPresentation.tsx`).
-- **Compact pane:** a right-panel entry via `rightPanelStore.ts`/`rightPanelLayout.ts` showing the
-  active project's current-sprint board beside a thread. Open/close is a reverse-state pair.
-- **Entry points:** command-palette actions (`commandPaletteStore.ts`) + a keybinding
-  (`keybindings.ts`) to open the board / create a ticket.
-- Domain state + subscription wiring in `packages/client-runtime` so web/desktop/mobile share it.
-- **Tests:** logic tests (`*.test.ts`) for board store/filtering/DnD ordering; a browser test where
-  the repo already uses `*.browser.test.ts`.
-- _Acceptance:_ owner can run the full board + pane on desktop, drag tickets, filter, open links.
+**Done** (verified in a real dev client: create, drag across columns, plan a sprint):
+
+- `/board` page (`apps/web/src/components/board/`): To do / Doing / Blocked / Done columns for one
+  sprint or the backlog; native drag-and-drop between and within columns (drop position maps
+  through filters via `boardDropPosition`); filter by text, priority, label; create/edit tickets
+  and sprints; start/complete sprints; per-card menu (move column, move sprint, archive); ticket
+  dialog lists linked threads (click to open) and PRs.
+- Shared state in `packages/client-runtime/src/state/board.ts` (atoms on the live
+  `board.subscribe` stream + pure helpers, tested) so mobile reuses it.
+- Server: a move's `order` is the position in the destination column; the column is renumbered.
+- Entry points: sidebar "Board" item, command palette "Open board".
+- i18n: every new web string translated into all 9 locales.
+
+**Open (polish pass):**
+
+- Compact right-panel board beside a thread (`rightPanelStore.ts`).
+- Keybinding to open the board / new ticket (`keybindings.ts`).
+- MCP tool presentation entries (`t3McpToolPresentation.ts` + `t3ToolSummary.ts` cases +
+  web/mobile translations) so agent board calls render with proper labels.
+- Archived-ticket view (restore from the UI; agents can already restore via `archive_ticket`).
+- PR chips: open the PR (currently text only).
+- Completing a sprint leaves unfinished tickets in it; offer "move to backlog / next sprint".
+- Sidebar wordmark still shows the T3 logo graphic (Phase 0 renamed text, not the logo).
 
 ### Phase 4 — Mobile UI
 
