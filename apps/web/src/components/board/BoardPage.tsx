@@ -436,7 +436,8 @@ function BoardView({
           const presentation = TICKET_STATUS_PRESENTATION[status];
           const tickets = columns.get(status) ?? [];
           const target = dropTarget?.status === status ? dropTarget.index : null;
-          let shownIndex = 0;
+          // Drop positions count the shown tickets other than the one being dragged.
+          const placed = tickets.filter((ticket) => ticket.id !== dragging);
           return (
             <section
               key={status}
@@ -481,7 +482,7 @@ function BoardView({
                 </Button>
               </header>
               {tickets.map((ticket) => {
-                const index = ticket.id === dragging ? null : shownIndex++;
+                const index = ticket.id === dragging ? null : placed.indexOf(ticket);
                 return (
                   <div key={ticket.id} className="flex flex-col gap-2">
                     {target !== null && index === target ? <DropLine /> : null}
@@ -521,7 +522,7 @@ function BoardView({
                   </div>
                 );
               })}
-              {target !== null && target >= shownIndex ? <DropLine /> : null}
+              {target !== null && target >= placed.length ? <DropLine /> : null}
               {tickets.length === 0 && target === null ? (
                 <p className="px-1.5 py-4 text-center text-muted-foreground text-xs">
                   <T>No tickets</T>
