@@ -3249,12 +3249,10 @@
   "63bc32e8544f4de1": "Cet environnement attend un identifiant d’appairage de confiance avant que l’app puisse se connecter.",
   "08cca2c33769f338": "Saisissez un jeton d’appairage pour ouvrir une session avec cet environnement.",
   "806ccd3cd1286873": "Cet environnement accepte l’appairage géré par l’app desktop et les jetons d’appairage à usage unique.",
-  "df86a063183fb547": "Cet environnement est géré par l’app desktop. Ouvrez-le depuis l’app desktop ou collez un identifiant d’amorçage s’il en a été émis un explicitement.",
   "256e33361be4121b": "Cet environnement accepte les jetons d’appairage à usage unique. Les liens d’appairage peuvent ouvrir cette page directement, ou vous pouvez coller le jeton ici.",
   "cbcae4b40060acdb": "Appairage avec cet environnement",
   "664b42ae92488743": "Validation du lien d’appairage et préparation de votre session.",
   "eb3a33756e51cba8": "Appairer avec cet environnement",
-  "55c59743f7fdd7fa": "Collez un jeton à usage unique ou un secret d’appairage",
   "ca6a0c94398d763d": "Appairage...",
   "989f56b8297dd684": "Ce jeton d’appairage à usage unique a déjà été envoyé. Demandez un nouveau lien d’appairage.",
   "693a1983e099523a": "Connexion à ce backend.",
@@ -13023,5 +13021,17 @@
   "04db8821271c4a77": "Nouveau sprint",
   "6db6491ad27026c9": "Objectif",
   "f9c672960f2e641b": "Créer le sprint",
-  "7a2ab7fbfc16f15a": "Tableau"
+  "7a2ab7fbfc16f15a": "Tableau",
+  "eea81210155c962e": "Ouvrez {appName} sur l'ordinateur où il tourne, allez dans Réglages → Connexions → Créer un lien, puis collez le jeton ici.",
+  "6863ede105a839dd": "Collez le jeton d'appairage",
+  "90c5d3612c644de2": "{count, plural, one {Déplacer # ticket ouvert vers} other {Déplacer # tickets ouverts vers}}",
+  "3897a85eb531a51e": "Destination des tickets ouverts",
+  "7d23fe610130a105": [
+    "Terminer ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ]
 }

@@ -3250,12 +3250,10 @@
   "63bc32e8544f4de1": "Diese Umgebung erwartet vertrauenswürdige Kopplungsdaten, bevor die App sich verbinden kann.",
   "08cca2c33769f338": "Gib ein Kopplungstoken ein, um eine Sitzung mit dieser Umgebung zu starten.",
   "806ccd3cd1286873": "Für diese Umgebung werden sowohl vom Desktop verwaltete Kopplung als auch einmalige Kopplungstokens akzeptiert.",
-  "df86a063183fb547": "Diese Umgebung wird vom Desktop verwaltet. Öffne sie in der Desktop-App oder füge Bootstrap-Anmeldedaten ein, falls ausdrücklich welche ausgestellt wurden.",
   "256e33361be4121b": "Diese Umgebung akzeptiert einmalige Kopplungstokens. Kopplungslinks können diese Seite direkt öffnen, oder du fügst das Token hier ein.",
   "cbcae4b40060acdb": "Kopplung mit dieser Umgebung",
   "664b42ae92488743": "Der Kopplungslink wird geprüft und deine Sitzung vorbereitet.",
   "eb3a33756e51cba8": "Mit dieser Umgebung koppeln",
-  "55c59743f7fdd7fa": "Einmaltoken oder Kopplungsgeheimnis einfügen",
   "ca6a0c94398d763d": "Wird gekoppelt...",
   "989f56b8297dd684": "Dieses einmalige Kopplungstoken wurde bereits übermittelt. Fordere einen neuen Kopplungslink an.",
   "693a1983e099523a": "Verbindung mit diesem Backend.",
@@ -13023,5 +13021,17 @@
   "04db8821271c4a77": "Neuer Sprint",
   "6db6491ad27026c9": "Ziel",
   "f9c672960f2e641b": "Sprint erstellen",
-  "7a2ab7fbfc16f15a": "Board"
+  "7a2ab7fbfc16f15a": "Board",
+  "eea81210155c962e": "Öffne {appName} auf dem Computer, auf dem es läuft, gehe zu Einstellungen → Verbindungen → Link erstellen und füge das Token hier ein.",
+  "6863ede105a839dd": "Pairing-Token einfügen",
+  "90c5d3612c644de2": "{count, plural, one {# offenes Ticket verschieben nach} other {# offene Tickets verschieben nach}}",
+  "3897a85eb531a51e": "Ziel für offene Tickets",
+  "7d23fe610130a105": [
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    " abschließen"
+  ]
 }

@@ -3249,12 +3249,10 @@
   "63bc32e8544f4de1": "Este entorno espera una credencial de emparejamiento de confianza antes de que la app pueda conectarse.",
   "08cca2c33769f338": "Introduce un token de emparejamiento para iniciar una sesión con este entorno.",
   "806ccd3cd1286873": "Este entorno acepta tanto el emparejamiento gestionado por el escritorio como los tokens de emparejamiento de un solo uso.",
-  "df86a063183fb547": "Este entorno lo gestiona el escritorio. Ábrelo desde la app de escritorio o pega una credencial de arranque si se emitió una de forma explícita.",
   "256e33361be4121b": "Este entorno acepta tokens de emparejamiento de un solo uso. Los enlaces de emparejamiento pueden abrir esta página directamente, o puedes pegar aquí el token.",
   "cbcae4b40060acdb": "Emparejando con este entorno",
   "664b42ae92488743": "Validando el enlace de emparejamiento y preparando tu sesión.",
   "eb3a33756e51cba8": "Emparejar con este entorno",
-  "55c59743f7fdd7fa": "Pega un token de un solo uso o un secreto de emparejamiento",
   "ca6a0c94398d763d": "Emparejando...",
   "989f56b8297dd684": "Este token de emparejamiento de un solo uso ya se envió. Solicita un enlace de emparejamiento nuevo.",
   "693a1983e099523a": "Conectando con este backend.",
@@ -13018,5 +13016,17 @@
   "04db8821271c4a77": "Nuevo sprint",
   "6db6491ad27026c9": "Objetivo",
   "f9c672960f2e641b": "Crear sprint",
-  "7a2ab7fbfc16f15a": "Tablero"
+  "7a2ab7fbfc16f15a": "Tablero",
+  "eea81210155c962e": "Abre {appName} en el ordenador donde se ejecuta, ve a Ajustes → Conexiones → Crear enlace y pega el token aquí.",
+  "6863ede105a839dd": "Pega el token de emparejamiento",
+  "90c5d3612c644de2": "{count, plural, one {Mover # ticket abierto a} other {Mover # tickets abiertos a}}",
+  "3897a85eb531a51e": "Destino de los tickets abiertos",
+  "7d23fe610130a105": [
+    "Completar ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ]
 }

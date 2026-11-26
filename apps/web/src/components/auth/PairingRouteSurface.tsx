@@ -17,6 +17,7 @@ import { Input } from "../ui/input";
 import { StandalonePage, StandalonePageHeader } from "../ui/standalone-page";
 import { useAtomCommand } from "../../state/use-atom-command";
 import { m, type MessageResolver } from "../../i18n/messages";
+import { APP_BASE_NAME } from "../../branding";
 
 export function PairingPendingSurface() {
   const gt = useGT();
@@ -108,7 +109,7 @@ export function PairingRouteSurface({
             disabled={isSubmitting}
             nativeInput
             onChange={(event) => setCredential(event.currentTarget.value)}
-            placeholder={gt("Paste a one-time token or pairing secret")}
+            placeholder={gt("Paste pairing token")}
             spellCheck={false}
             value={credential}
           />
@@ -338,7 +339,8 @@ function describeSupportedMethods(
   if (bootstrapMethods.includes("desktop-bootstrap")) {
     return resolve(
       msg(
-        "This environment is desktop-managed. Open it from the desktop app or paste a bootstrap credential if one was issued explicitly.",
+        "Open {appName} on the computer it runs on, go to Settings → Connections → Create link, and paste the token here.",
+        { appName: APP_BASE_NAME },
       ),
     );
   }

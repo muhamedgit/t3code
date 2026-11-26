@@ -3249,12 +3249,10 @@
   "63bc32e8544f4de1": "This environment expects a trusted pairing credential before the app can connect.",
   "08cca2c33769f338": "Enter a pairing token to start a session with this environment.",
   "806ccd3cd1286873": "Desktop-managed pairing and one-time pairing tokens are both accepted for this environment.",
-  "df86a063183fb547": "This environment is desktop-managed. Open it from the desktop app or paste a bootstrap credential if one was issued explicitly.",
   "256e33361be4121b": "This environment accepts one-time pairing tokens. Pairing links can open this page directly, or you can paste the token here.",
   "cbcae4b40060acdb": "Pairing with this environment",
   "664b42ae92488743": "Validating the pairing link and preparing your session.",
   "eb3a33756e51cba8": "Pair with this environment",
-  "55c59743f7fdd7fa": "Paste a one-time token or pairing secret",
   "ca6a0c94398d763d": "Pairing...",
   "989f56b8297dd684": "This one-time pairing token was already submitted. Request a new pairing link.",
   "693a1983e099523a": "Connecting to this backend.",
@@ -13032,5 +13030,17 @@
   "04db8821271c4a77": "New sprint",
   "6db6491ad27026c9": "Goal",
   "f9c672960f2e641b": "Create sprint",
-  "7a2ab7fbfc16f15a": "Board"
+  "7a2ab7fbfc16f15a": "Board",
+  "eea81210155c962e": "Open {appName} on the computer it runs on, go to Settings → Connections → Create link, and paste the token here.",
+  "6863ede105a839dd": "Paste pairing token",
+  "90c5d3612c644de2": "{count, plural, one {Move # open ticket to} other {Move # open tickets to}}",
+  "3897a85eb531a51e": "Destination for open tickets",
+  "7d23fe610130a105": [
+    "Complete ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ]
 }

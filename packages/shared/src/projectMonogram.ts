@@ -6,7 +6,9 @@ export function projectMonogram(projectName: string): string {
     projectName
       .normalize("NFKC")
       .trim()
-      .match(/[\p{L}\p{N}]+/gu) ?? [];
+      .match(/[\p{L}\p{N}]+/gu)
+      // `OpenLess` is two words for a monogram.
+      ?.flatMap((word) => word.split(/(?<=\p{Ll})(?=\p{Lu})/u)) ?? [];
   const firstWord = words[0];
   if (!firstWord) return "PR";
 
@@ -15,7 +17,7 @@ export function projectMonogram(projectName: string): string {
   if (SINGLE_GLYPH_SCRIPT.test(first)) return first;
   const second =
     glyphs.slice(1).find((glyph) => /\p{N}/u.test(glyph)) ??
-    (words.length > 1 ? Array.from(words.at(-1) ?? "")[0] : glyphs.at(-1)) ??
+    (words.length > 1 ? Array.from(words.at(-1) ?? "")[0] : glyphs[1]) ??
     first;
   return Array.from(`${first}${second}`.toUpperCase()).slice(0, 2).join("");
 }

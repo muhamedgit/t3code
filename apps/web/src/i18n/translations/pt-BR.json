@@ -3249,12 +3249,10 @@
   "63bc32e8544f4de1": "Este ambiente exige uma credencial de pareamento confiável antes que o app possa se conectar.",
   "08cca2c33769f338": "Informe um token de pareamento para iniciar uma sessão com este ambiente.",
   "806ccd3cd1286873": "Este ambiente aceita tanto pareamento gerenciado pelo desktop quanto tokens de pareamento de uso único.",
-  "df86a063183fb547": "Este ambiente é gerenciado pelo desktop. Abra-o pelo app para desktop ou cole uma credencial de bootstrap se alguma tiver sido emitida explicitamente.",
   "256e33361be4121b": "Este ambiente aceita tokens de pareamento de uso único. Links de pareamento podem abrir esta página diretamente, ou você pode colar o token aqui.",
   "cbcae4b40060acdb": "Pareando com este ambiente",
   "664b42ae92488743": "Validando o link de pareamento e preparando sua sessão.",
   "eb3a33756e51cba8": "Parear com este ambiente",
-  "55c59743f7fdd7fa": "Cole um token de uso único ou um segredo de pareamento",
   "ca6a0c94398d763d": "Pareando...",
   "989f56b8297dd684": "Este token de pareamento de uso único já foi enviado. Solicite um novo link de pareamento.",
   "693a1983e099523a": "Conectando a este backend.",
@@ -13023,5 +13021,17 @@
   "04db8821271c4a77": "Novo sprint",
   "6db6491ad27026c9": "Objetivo",
   "f9c672960f2e641b": "Criar sprint",
-  "7a2ab7fbfc16f15a": "Quadro"
+  "7a2ab7fbfc16f15a": "Quadro",
+  "eea81210155c962e": "Abra o {appName} no computador em que ele roda, vá em Configurações → Conexões → Criar link e cole o token aqui.",
+  "6863ede105a839dd": "Cole o token de pareamento",
+  "90c5d3612c644de2": "{count, plural, one {Mover # ticket aberto para} other {Mover # tickets abertos para}}",
+  "3897a85eb531a51e": "Destino dos tickets abertos",
+  "7d23fe610130a105": [
+    "Concluir ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ]
 }

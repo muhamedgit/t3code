@@ -3249,12 +3249,10 @@
   "63bc32e8544f4de1": "Den här miljön kräver en betrodd parkopplingsuppgift innan appen kan ansluta.",
   "08cca2c33769f338": "Ange en parkopplingstoken för att starta en session med den här miljön.",
   "806ccd3cd1286873": "Både skrivbordshanterad parkoppling och engångstoken för parkoppling godtas i den här miljön.",
-  "df86a063183fb547": "Den här miljön hanteras av skrivbordsappen. Öppna den från skrivbordsappen eller klistra in en startuppgift om en har utfärdats uttryckligen.",
   "256e33361be4121b": "Den här miljön godtar engångstoken för parkoppling. Parkopplingslänkar kan öppna den här sidan direkt, eller så kan du klistra in token här.",
   "cbcae4b40060acdb": "Parkopplar med den här miljön",
   "664b42ae92488743": "Validerar parkopplingslänken och förbereder din session.",
   "eb3a33756e51cba8": "Parkoppla med den här miljön",
-  "55c59743f7fdd7fa": "Klistra in en engångstoken eller en parkopplingshemlighet",
   "ca6a0c94398d763d": "Parkopplar...",
   "989f56b8297dd684": "Den här engångstoken för parkoppling har redan skickats. Begär en ny parkopplingslänk.",
   "693a1983e099523a": "Ansluter till den här backenden.",
@@ -13030,5 +13028,17 @@
   "04db8821271c4a77": "Ny sprint",
   "6db6491ad27026c9": "Mål",
   "f9c672960f2e641b": "Skapa sprint",
-  "7a2ab7fbfc16f15a": "Tavla"
+  "7a2ab7fbfc16f15a": "Tavla",
+  "eea81210155c962e": "Öppna {appName} på datorn där det körs, gå till Inställningar → Anslutningar → Skapa länk och klistra in token här.",
+  "6863ede105a839dd": "Klistra in parkopplingstoken",
+  "90c5d3612c644de2": "{count, plural, one {Flytta # öppen ticket till} other {Flytta # öppna tickets till}}",
+  "3897a85eb531a51e": "Mål för öppna tickets",
+  "7d23fe610130a105": [
+    "Slutför ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    }
+  ]
 }

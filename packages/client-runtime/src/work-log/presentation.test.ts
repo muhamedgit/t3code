@@ -6,6 +6,7 @@ import * as DateTime from "effect/DateTime";
 import {
   resolveViewedImageAsset,
   resolveWorkEntryToolPresentation,
+  summarizeToolGroup,
   toolItemForDisplay,
   type WorkLogPresentationEntry,
   workEntryIndicatesToolFailure,
@@ -223,5 +224,28 @@ describe("resolveViewedImageAsset", () => {
       resolveViewedImageAsset("file:///repo/my%20shot.png", { threadId: ThreadId.make("thread") })
         ?.resource.path,
     ).toBe("/repo/my shot.png");
+  });
+});
+
+describe("summarizeToolGroup", () => {
+  it("does not repeat the first clause's verb", () => {
+    const entries: WorkLogPresentationEntry[] = [
+      {
+        id: "a",
+        createdAt: "2026-11-26T00:00:00.000Z",
+        label: "read_board",
+        tone: "tool",
+        itemType: "dynamic_tool",
+        toolSource: { key: "mcp:t3-code", name: "T3 Code", kind: "integration" },
+      },
+      {
+        id: "b",
+        createdAt: "2026-11-26T00:00:01.000Z",
+        label: "ToolSearch",
+        tone: "tool",
+        itemType: "dynamic_tool",
+      },
+    ];
+    expect(summarizeToolGroup(entries).summary).toBe("Used T3 Code integration and 1 tool");
   });
 });
