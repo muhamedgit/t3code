@@ -67,7 +67,7 @@ import {
   TICKET_STATUS_PRESENTATION,
 } from "./boardPresentation";
 import type { BoardSearch } from "./boardSearch.logic";
-import { SprintDialog, TicketDialog, type TicketDraft } from "./TicketDialog";
+import { CompleteSprintDialog, SprintDialog, TicketDialog, type TicketDraft } from "./TicketDialog";
 
 const DRAG_TYPE = "application/x-sentineldev-ticket";
 
@@ -206,12 +206,18 @@ function BoardView({
 
   const [creating, setCreating] = useState<TicketStatus | null>(null);
   const [planningSprint, setPlanningSprint] = useState(false);
+  const [completingSprint, setCompletingSprint] = useState(false);
   const [dragging, setDragging] = useState<Ticket["id"] | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
 
   const scope = resolveBoardScope(state, search.sprint);
   const sprints = boardSprints(state);
   const sprint = scope === "backlog" ? undefined : sprints.find((s) => s.id === scope);
+  const openInSprint =
+    sprint === undefined
+      ? 0
+      : state.tickets.filter((t) => t.sprintId === sprint.id && t.status !== "done").length;
+  const carryOverSprints = sprints.filter((s) => s.id !== sprint?.id && s.state !== "closed");
   const counts = boardScopeCounts(state);
   const filter = { query: search.q, priorities: search.priority, labels: search.label };
   const columns = boardColumns(state, scope, filter);
@@ -346,15 +352,19 @@ function BoardView({
           <Button
             size="sm"
             variant="outline"
-            onClick={() =>
+            onClick={() => {
+              if (sprint.state === "active" && openInSprint > 0 && carryOverSprints.length > 0) {
+                setCompletingSprint(true);
+                return;
+              }
               void updateSprint({
                 environmentId,
                 input: {
                   sprintId: sprint.id,
                   state: sprint.state === "planned" ? "active" : "closed",
                 },
-              })
-            }
+              });
+            }}
           >
             {sprint.state === "planned" ? (
               <>
@@ -584,6 +594,25 @@ function BoardView({
             </div>
           ) : null}
         </TicketDialog>
+      ) : null}
+      {completingSprint && sprint !== undefined ? (
+        <CompleteSprintDialog
+          sprint={sprint}
+          openTicketCount={openInSprint}
+          destinations={carryOverSprints}
+          onClose={() => setCompletingSprint(false)}
+          onSubmit={async (carryOverTo) => {
+            const result = await updateSprint({
+              environmentId,
+              input: {
+                sprintId: sprint.id,
+                state: "closed",
+                ...(carryOverTo === null ? {} : { carryOverTo }),
+              },
+            });
+            return result._tag === "Success";
+          }}
+        />
       ) : null}
       {planningSprint ? (
         <SprintDialog

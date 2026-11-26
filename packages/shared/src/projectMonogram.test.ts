@@ -4,8 +4,9 @@ import { projectMonogram } from "./projectMonogram.ts";
 
 describe("projectMonogram", () => {
   it("uses two letters for Latin names", () => {
-    expect(projectMonogram("Paseo")).toBe("PO");
-    expect(projectMonogram("OpenLess")).toBe("OS");
+    expect(projectMonogram("Paseo")).toBe("PA");
+    expect(projectMonogram("pwnpilot")).toBe("PW");
+    expect(projectMonogram("OpenLess")).toBe("OL");
     expect(projectMonogram("Auto Monogram")).toBe("AM");
     expect(projectMonogram("web2 app")).toBe("W2");
     expect(projectMonogram("Café Ünïcode")).toBe("CÜ");
@@ -30,7 +31,7 @@ describe("projectMonogram", () => {
     expect(projectMonogram("健康App")).toBe("健");
     expect(projectMonogram("  健康 Paseo")).toBe("健");
     expect(projectMonogram("Paseo 健康")).toBe("P健");
-    expect(projectMonogram("AI助手")).toBe("A手");
+    expect(projectMonogram("AI助手")).toBe("AI");
   });
 
   it("falls back when the name has no letters or digits", () => {

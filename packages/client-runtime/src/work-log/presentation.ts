@@ -814,9 +814,16 @@ export function summarizeToolGroup(
       ),
     );
   }
-  const sentenceLabels = labels.map((label, index) =>
-    index === 0 ? label : label.charAt(0).toLowerCase() + label.slice(1),
-  );
+  // "Used X integration and used 1 tool" reads better as "... and 1 tool": a clause that repeats
+  // the first clause's verb drops it.
+  const leadWord = (label: string) => label.split(" ", 1)[0]!.toLocaleLowerCase();
+  const firstVerb = labels[0] === undefined ? "" : leadWord(labels[0]);
+  const sentenceLabels = labels.map((label, index) => {
+    if (index === 0) return label;
+    const lowered = label.charAt(0).toLowerCase() + label.slice(1);
+    const rest = lowered.slice(firstVerb.length).trimStart();
+    return leadWord(label) === firstVerb && rest.length > 0 ? rest : lowered;
+  });
   const summary = joinClauses(sentenceLabels, resolve);
   return { summary, hasFailure: summaries.some((group) => group.failedCount > 0) };
 }

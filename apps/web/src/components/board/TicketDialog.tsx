@@ -1,6 +1,12 @@
 import { BOARD_PRIORITIES } from "@t3tools/client-runtime/state/board";
-import { TicketLabel, type Ticket, type TicketPriority } from "@t3tools/contracts";
-import { T, useGT, useMessages } from "gt-react";
+import {
+  type Sprint,
+  type SprintId,
+  TicketLabel,
+  type Ticket,
+  type TicketPriority,
+} from "@t3tools/contracts";
+import { T, useGT, useMessages, Var } from "gt-react";
 import { useId, useState, type ReactNode } from "react";
 
 import { Button } from "../ui/button";
@@ -240,6 +246,101 @@ export function SprintDialog({
             </Button>
             <Button type="submit" disabled={name.trim().length === 0 || submitting}>
               <T>Create sprint</T>
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+/**
+ * Completes a sprint that still has open tickets, asking where they go: another open sprint or
+ * the backlog (the default).
+ */
+export function CompleteSprintDialog({
+  sprint,
+  openTicketCount,
+  destinations,
+  onSubmit,
+  onClose,
+}: {
+  readonly sprint: Sprint;
+  readonly openTicketCount: number;
+  readonly destinations: ReadonlyArray<Sprint>;
+  readonly onSubmit: (carryOverTo: SprintId | null) => Promise<boolean>;
+  readonly onClose: () => void;
+}) {
+  const gt = useGT();
+  const [target, setTarget] = useState<string>(destinations[0]?.id ?? "backlog");
+  const [submitting, setSubmitting] = useState(false);
+  const targetName =
+    destinations.find((candidate) => candidate.id === target)?.name ?? gt("Backlog");
+  const submit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    const chosen = destinations.find((candidate) => candidate.id === target)?.id ?? null;
+    const saved = await onSubmit(chosen);
+    setSubmitting(false);
+    if (saved) onClose();
+  };
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogPopup className="sm:max-w-md">
+        <form
+          className="flex min-h-0 flex-col"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>
+              <T>
+                Complete <Var>{sprint.name}</Var>
+              </T>
+            </DialogTitle>
+          </DialogHeader>
+          <DialogPanel>
+            <div className="flex flex-col gap-1.5">
+              <Label>
+                {gt("{count, plural, one {Move # open ticket to} other {Move # open tickets to}}", {
+                  count: openTicketCount,
+                })}
+              </Label>
+              <Select<string>
+                value={target}
+                onValueChange={(value) => {
+                  if (value !== null) setTarget(value);
+                }}
+              >
+                <SelectTrigger aria-label={gt("Destination for open tickets")} size="sm">
+                  <SelectValue>{targetName}</SelectValue>
+                </SelectTrigger>
+                <SelectPopup>
+                  {destinations.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="backlog">
+                    <T>Backlog</T>
+                  </SelectItem>
+                </SelectPopup>
+              </Select>
+            </div>
+          </DialogPanel>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              <T>Cancel</T>
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              <T>Complete sprint</T>
             </Button>
           </DialogFooter>
         </form>

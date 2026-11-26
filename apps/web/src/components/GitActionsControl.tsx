@@ -1113,6 +1113,11 @@ function CheckoutGitActionsControl({
       ? gt("Uncommitted")
       : gt("vs {ref}", { ref: resolvedChangesTotals.baseRef })
     : null;
+  // The row is narrow: show `main` for `origin/main` and keep the full ref in the tooltip.
+  const changesBaseShortLabel =
+    resolvedChangesTotals?.baseRef?.startsWith("origin/") === true
+      ? gt("vs {ref}", { ref: resolvedChangesTotals.baseRef.slice("origin/".length) })
+      : changesBaseLabel;
 
   const allFiles = gitStatusForActions?.workingTree.files ?? [];
   // Changed-file paths are repository-relative, so they must resolve against
@@ -1739,7 +1744,7 @@ function CheckoutGitActionsControl({
                       <span className="pointer-events-auto min-w-0 truncate font-normal text-muted-foreground" />
                     }
                   >
-                    {changesBaseLabel}
+                    {changesBaseShortLabel}
                   </TooltipTrigger>
                   <TooltipPopup side="top" className="max-w-96 break-words">
                     {changesBaseLabel}
