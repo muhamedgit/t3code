@@ -56,7 +56,7 @@ Known and intentional (PR #5: "checking one needs the git host"). `link_ticket` 
 
 Screenshot: `devscreen/2026-11-26-beta/pair-desktop.png`
 
-### B1 [P2] The logo reads "Code"; it should be SentinelDev (the one branding fix)
+### B1 [P2] The logo reads "Code"; it should be SentinelDev (the one branding fix) — fixed in #7
 - Actual: the card header shows a white/grey eye plus the word **"Code"**. Its accessible name is `img "T3 Code"`.
 - Expected: the same lockup as the desktop sidebar (see the top left of `devscreen/2026-11-26-beta/desktop-window.png`): the **blue**
   Sentinel eye plus "**Sentinel**Dev", with `alt="SentinelDev"`.
