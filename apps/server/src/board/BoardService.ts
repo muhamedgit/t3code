@@ -17,6 +17,7 @@ import {
   TicketLinkInput,
   TicketMoveInput,
   type TicketLinks,
+  type TicketStatus,
   TicketUpdateInput,
   ThreadId,
   type ThreadPullRequestKey,
@@ -66,11 +67,22 @@ export class SprintNotFoundError extends Schema.TaggedError<SprintNotFoundError>
   }
 }
 
+/** A sprint change the board's rules refuse, such as a second active sprint. */
+export class SprintConflictError extends Schema.TaggedError<SprintConflictError>()(
+  "SprintConflictError",
+  { reason: Schema.String },
+) {
+  override get message(): string {
+    return this.reason;
+  }
+}
+
 export type BoardServiceError =
   | BoardStoreMod.BoardStoreError
   | BoardNotFoundError
   | TicketNotFoundError
-  | SprintNotFoundError;
+  | SprintNotFoundError
+  | SprintConflictError;
 
 function samePr(a: ThreadPullRequestKey, b: ThreadPullRequestKey): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -166,6 +178,17 @@ const make = Effect.gen(function* () {
       ),
     );
 
+  /** Marks the board changed, so its `updatedAt` follows every ticket and sprint write. */
+  const touchBoard = (boardId: BoardId, now: string) =>
+    store.getBoard(boardId).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.void,
+          onSome: (row: BoardRow) => store.upsertBoard({ ...row, updatedAt: now }),
+        }),
+      ),
+    );
+
   const projectOf = (boardId: BoardId) =>
     store.getBoard(boardId).pipe(Effect.map(Option.map((row) => row.projectId)));
 
@@ -206,18 +229,22 @@ const make = Effect.gen(function* () {
     const boardRow = yield* requireBoard(input.boardId);
     const now = yield* nowIso;
     const token = yield* randomToken;
-    const existing = yield* store.listTickets(input.boardId, { includeArchived: true });
+    const status = input.status ?? "todo";
+    const sprintId = input.sprintId ?? null;
+    const column = (yield* store.listTickets(input.boardId)).filter(
+      (t) => t.status === status && t.sprintId === sprintId,
+    );
     const ticket: TicketRow = {
       id: TicketId.make(`ticket_${token}`),
       boardId: input.boardId,
       key: TicketKey.make(`${boardRow.keyPrefix}-${boardRow.nextKeySeq}`),
       title: input.title,
       description: input.description ?? "",
-      status: input.status ?? "todo",
+      status,
       priority: input.priority ?? "none",
       labels: input.labels ?? [],
-      sprintId: input.sprintId ?? null,
-      order: nextOrder(existing),
+      sprintId,
+      order: nextOrder(column),
       links: { threads: [], pullRequests: [] },
       createdAt: now,
       updatedAt: now,
@@ -240,6 +267,7 @@ const make = Effect.gen(function* () {
       updatedAt: now,
     };
     yield* store.upsertTicket(next);
+    yield* touchBoard(current.boardId, now);
     return next;
   });
 
@@ -265,6 +293,7 @@ const make = Effect.gen(function* () {
       if (ticket === moved || ticket.order !== order)
         yield* store.upsertTicket({ ...ticket, order });
     }
+    yield* touchBoard(current.boardId, now);
     return moved;
   });
 
@@ -273,6 +302,7 @@ const make = Effect.gen(function* () {
     const now = yield* nowIso;
     const next: TicketRow = { ...current, links: mergeLinks(current.links, input), updatedAt: now };
     yield* store.upsertTicket(next);
+    yield* touchBoard(current.boardId, now);
     return next;
   });
 
@@ -287,6 +317,7 @@ const make = Effect.gen(function* () {
       updatedAt: now,
     };
     yield* store.upsertTicket(next);
+    yield* touchBoard(current.boardId, now);
     return next;
   });
 
@@ -308,26 +339,96 @@ const make = Effect.gen(function* () {
       updatedAt: now,
     };
     yield* store.upsertSprint({ ...sprint, deletedAt: null });
+    yield* touchBoard(input.boardId, now);
     return sprint;
   });
 
+  /**
+   * Starting a sprint records `startsAt` and is refused while another sprint is active. Closing it
+   * records `endsAt` and moves its tickets that are not done to `carryOverTo`, or the backlog,
+   * last in their columns there.
+   */
   const updateSprint = Effect.fn("BoardService.updateSprint")(function* (input: SprintUpdateInput) {
-    const current = yield* store.getSprint(input.sprintId);
-    if (Option.isNone(current)) {
+    const found = yield* store.getSprint(input.sprintId);
+    if (Option.isNone(found)) {
       return yield* new SprintNotFoundError({ sprintId: input.sprintId });
     }
+    const current = found.value;
+    const state = input.state ?? current.state;
+    const starting = state === "active" && current.state !== "active";
+    const closing = state === "closed" && current.state !== "closed";
+
+    if (starting) {
+      const active = (yield* store.listSprints(current.boardId)).find(
+        (sprint) => sprint.id !== current.id && sprint.state === "active",
+      );
+      if (active !== undefined) {
+        return yield* new SprintConflictError({
+          reason: `Sprint "${active.name}" is already active. Close it before starting "${current.name}".`,
+        });
+      }
+    }
+    if (input.carryOverTo !== undefined) {
+      if (!closing) {
+        return yield* new SprintConflictError({
+          reason: "carryOverTo applies only when closing a sprint.",
+        });
+      }
+      const target = yield* store.getSprint(input.carryOverTo);
+      if (Option.isNone(target)) {
+        return yield* new SprintNotFoundError({ sprintId: input.carryOverTo });
+      }
+      if (
+        target.value.boardId !== current.boardId ||
+        target.value.id === current.id ||
+        target.value.state === "closed"
+      ) {
+        return yield* new SprintConflictError({
+          reason: "carryOverTo must be another open sprint on the same board.",
+        });
+      }
+    }
+
     const now = yield* nowIso;
+    const reopening = starting && current.state === "closed";
     const next = {
-      ...current.value,
+      ...current,
       ...(input.name === undefined ? {} : { name: input.name }),
       ...(input.goal === undefined ? {} : { goal: input.goal }),
-      ...(input.state === undefined ? {} : { state: input.state }),
-      ...(input.startsAt === undefined ? {} : { startsAt: input.startsAt }),
-      ...(input.endsAt === undefined ? {} : { endsAt: input.endsAt }),
+      state,
+      startsAt: input.startsAt !== undefined ? input.startsAt : starting ? now : current.startsAt,
+      endsAt:
+        input.endsAt !== undefined
+          ? input.endsAt
+          : closing
+            ? now
+            : reopening
+              ? null
+              : current.endsAt,
       ...(input.order === undefined ? {} : { order: input.order }),
       updatedAt: now,
     };
     yield* store.upsertSprint(next);
+
+    if (closing) {
+      const destination = input.carryOverTo ?? null;
+      const tickets = yield* store.listTickets(current.boardId);
+      const nextInColumn = new Map<TicketStatus, number>();
+      const unfinished = tickets
+        .filter((t) => t.sprintId === current.id && t.status !== "done")
+        .toSorted(byColumnOrder);
+      for (const ticket of unfinished) {
+        const order =
+          nextInColumn.get(ticket.status) ??
+          nextOrder(
+            tickets.filter((t) => t.sprintId === destination && t.status === ticket.status),
+          );
+        nextInColumn.set(ticket.status, order + 1);
+        yield* store.upsertTicket({ ...ticket, sprintId: destination, order, updatedAt: now });
+      }
+    }
+
+    yield* touchBoard(current.boardId, now);
     return store.toSprint(next);
   });
 

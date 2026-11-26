@@ -29,7 +29,12 @@ type Err = BoardServiceMod.BoardServiceError;
 /** The wire error clients and agents see for a board service failure. */
 export const toBoardRpcError = (error: Err): BoardRpcError =>
   new BoardRpcError({
-    kind: error._tag === "BoardStoreError" ? "failed" : "not_found",
+    kind:
+      error._tag === "BoardStoreError"
+        ? "failed"
+        : error._tag === "SprintConflictError"
+          ? "conflict"
+          : "not_found",
     reason: error.message,
   });
 

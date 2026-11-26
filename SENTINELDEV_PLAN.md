@@ -202,6 +202,11 @@ Each phase is shippable and crosses all required surfaces for what it introduces
 - Entry points: sidebar "Board" item, command palette "Open board".
 - i18n: every new web string translated into all 9 locales.
 
+**Sprint lifecycle** (after the first agent end-to-end test): one active sprint per board;
+starting records `startsAt`, closing records `endsAt` and moves tickets not done to
+`carryOverTo` or the backlog; a new ticket's order is its place in its own column; the board's
+`updatedAt` follows every ticket and sprint write.
+
 **Open (polish pass):**
 
 - Compact right-panel board beside a thread (`rightPanelStore.ts`).
@@ -210,7 +215,8 @@ Each phase is shippable and crosses all required surfaces for what it introduces
   web/mobile translations) so agent board calls render with proper labels.
 - Archived-ticket view (restore from the UI; agents can already restore via `archive_ticket`).
 - PR chips: open the PR (currently text only).
-- Completing a sprint leaves unfinished tickets in it; offer "move to backlog / next sprint".
+- Completing a sprint from the UI always sends unfinished tickets to the backlog; offer the
+  next sprint as well (agents can already pass `carryOverTo` to `update_sprint`).
 - Sidebar wordmark still shows the T3 logo graphic (Phase 0 renamed text, not the logo).
 
 ### Phase 4 — Mobile UI
