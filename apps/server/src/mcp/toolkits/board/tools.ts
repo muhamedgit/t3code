@@ -81,7 +81,12 @@ const BoardToolError = Schema.Union([
 const ReadBoardTool = Tool.make("read_board", {
   description:
     "Read a project's scrum board: its sprints and open tickets with status, priority, labels and links. Creates the board if the project has none.",
-  parameters: ProjectTargetInput,
+  parameters: Schema.Struct({
+    ...ProjectTargetInput.fields,
+    includeArchived: Schema.optional(
+      Schema.Boolean.annotate({ description: "Also list archived tickets. Defaults to false." }),
+    ),
+  }),
   success: BoardState,
   failure: BoardToolError,
   dependencies,

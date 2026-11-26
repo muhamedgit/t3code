@@ -1,4 +1,4 @@
-import { ProjectId, type Ticket } from "@t3tools/contracts";
+import { ProjectId, SprintId, type Ticket } from "@t3tools/contracts";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -176,4 +176,70 @@ describe("BoardService", () => {
       expect(after > before).toBe(true);
     }).pipe(Effect.provide(layer)),
   );
+
+  it.effect("refuses a sprint that is missing or on another board", () =>
+    Effect.gen(function* () {
+      const service = yield* BoardService.BoardService;
+      const board = yield* service.ensureBoard({ projectId: PROJECT_ID });
+      const other = yield* service.ensureBoard({ projectId: ProjectId.make("project-2") });
+      const foreign = yield* service.createSprint({ boardId: other.id, name: "Elsewhere" });
+      const missing = SprintId.make("sprint_missing");
+
+      const created = yield* Effect.flip(
+        service.createTicket({ boardId: board.id, title: "A", sprintId: missing }),
+      );
+      expect(created._tag).toBe("SprintNotFoundError");
+      const crossed = yield* Effect.flip(
+        service.createTicket({ boardId: board.id, title: "A", sprintId: foreign.id }),
+      );
+      expect(crossed._tag).toBe("SprintConflictError");
+
+      const ticket = yield* service.createTicket({ boardId: board.id, title: "B" });
+      const moved = yield* Effect.flip(
+        service.moveTicket({ ticketId: ticket.id, sprintId: missing }),
+      );
+      expect(moved._tag).toBe("SprintNotFoundError");
+    }).pipe(Effect.provide(layer)),
+  );
+
+  it.effect("reopening a closed sprint keeps its first start date", () =>
+    Effect.gen(function* () {
+      const service = yield* BoardService.BoardService;
+      const board = yield* service.ensureBoard({ projectId: PROJECT_ID });
+      const sprint = yield* service.createSprint({ boardId: board.id, name: "Sprint 1" });
+      const started = yield* service.updateSprint({ sprintId: sprint.id, state: "active" });
+      yield* TestClock.adjust("1 hour");
+      yield* service.updateSprint({ sprintId: sprint.id, state: "closed" });
+      yield* TestClock.adjust("1 hour");
+      const reopened = yield* service.updateSprint({ sprintId: sprint.id, state: "active" });
+      expect(reopened.startsAt).toBe(started.startsAt);
+      expect(reopened.endsAt).toBeNull();
+    }).pipe(Effect.provide(layer)),
+  );
+
+  it.effect("lists archived tickets only when asked", () =>
+    Effect.gen(function* () {
+      const service = yield* BoardService.BoardService;
+      const board = yield* service.ensureBoard({ projectId: PROJECT_ID });
+      const ticket = yield* service.createTicket({ boardId: board.id, title: "Old" });
+      yield* service.archiveTicket({ ticketId: ticket.id, archived: true });
+      const titles = (includeArchived: boolean) =>
+        service
+          .getState(board.id, { includeArchived })
+          .pipe(Effect.map((s) => Option.getOrThrow(s).tickets.map((t) => t.title)));
+      expect(yield* titles(false)).toEqual([]);
+      expect(yield* titles(true)).toEqual(["Old"]);
+    }).pipe(Effect.provide(layer)),
+  );
+});
+
+describe("ticketKeyPrefix", () => {
+  it("names keys after the project", () => {
+    expect(BoardService.ticketKeyPrefix("PwnPilot")).toBe("PWNP");
+    expect(BoardService.ticketKeyPrefix("sentineldev-scratch")).toBe("SENS");
+    expect(BoardService.ticketKeyPrefix("My Cool App")).toBe("MCA");
+    expect(BoardService.ticketKeyPrefix("t3code")).toBe("T3C");
+    expect(BoardService.ticketKeyPrefix("x")).toBe("SENT");
+    expect(BoardService.ticketKeyPrefix("---")).toBe("SENT");
+  });
 });

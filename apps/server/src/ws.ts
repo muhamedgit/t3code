@@ -2044,7 +2044,13 @@ export const layerWsRpc = (
 
       const handlers = ServerWsRpcGroup.of({
         [WS_METHODS.boardSubscribe]: (input) =>
-          boardHub.watch(input.projectId).pipe(Stream.mapError(BoardHubMod.toBoardRpcError)),
+          Stream.unwrap(
+            projectService.getShell(input.projectId).pipe(
+              Effect.map(Option.getOrUndefined),
+              Effect.orElseSucceed(() => undefined),
+              Effect.map((shell) => boardHub.watch(input.projectId, { title: shell?.title })),
+            ),
+          ).pipe(Stream.mapError(BoardHubMod.toBoardRpcError)),
         [WS_METHODS.boardEnsure]: (input) =>
           boardHub.ensureBoard(input).pipe(Effect.mapError(BoardHubMod.toBoardRpcError)),
         [WS_METHODS.boardTicketCreate]: (input) =>

@@ -14,6 +14,7 @@ import {
   type TicketLinkInput,
   type TicketMoveInput,
   type TicketUpdateInput,
+  TrimmedNonEmptyString,
 } from "@t3tools/contracts";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -38,6 +39,11 @@ export const toBoardRpcError = (error: Err): BoardRpcError =>
     reason: error.message,
   });
 
+/** What a board created on first read is named after. */
+export interface BoardProject {
+  readonly title?: string | undefined;
+}
+
 interface BoardChange {
   readonly projectId: ProjectId;
   readonly state: BoardState;
@@ -51,9 +57,16 @@ interface BoardChange {
 export class BoardHub extends Context.Service<
   BoardHub,
   {
-    readonly watch: (projectId: ProjectId) => Stream.Stream<BoardState, Err>;
+    readonly watch: (
+      projectId: ProjectId,
+      project?: BoardProject,
+    ) => Stream.Stream<BoardState, Err>;
     /** The project's current board, created if it has none. */
-    readonly read: (projectId: ProjectId) => Effect.Effect<BoardState, Err>;
+    readonly read: (
+      projectId: ProjectId,
+      project?: BoardProject,
+      options?: BoardServiceMod.BoardStateOptions,
+    ) => Effect.Effect<BoardState, Err>;
     readonly ensureBoard: (input: BoardEnsureInput) => Effect.Effect<Board, Err>;
     readonly createTicket: (input: TicketCreateInput) => Effect.Effect<Ticket, Err>;
     readonly updateTicket: (input: TicketUpdateInput) => Effect.Effect<Ticket, Err>;
@@ -88,18 +101,28 @@ const make = Effect.gen(function* () {
         ),
       );
 
-  const read = Effect.fn("BoardHub.read")(function* (projectId: ProjectId) {
-    const board = yield* service.ensureBoard({ projectId });
-    const state = yield* service.getState(board.id);
+  const read = Effect.fn("BoardHub.read")(function* (
+    projectId: ProjectId,
+    project?: BoardProject,
+    options?: BoardServiceMod.BoardStateOptions,
+  ) {
+    const title = project?.title?.trim();
+    const board = yield* service.ensureBoard({
+      projectId,
+      ...(title
+        ? { keyPrefix: TrimmedNonEmptyString.make(BoardServiceMod.ticketKeyPrefix(title)) }
+        : {}),
+    });
+    const state = yield* service.getState(board.id, options);
     return Option.getOrElse(state, (): BoardState => ({ board, sprints: [], tickets: [] }));
   });
 
   // Subscribe before reading, so a change landing between the read and the subscription is kept.
-  const watch = (projectId: ProjectId) =>
+  const watch = (projectId: ProjectId, project?: BoardProject) =>
     Stream.unwrap(
       Effect.gen(function* () {
         const subscription = yield* PubSub.subscribe(pubsub);
-        const current = yield* read(projectId);
+        const current = yield* read(projectId, project);
         return Stream.concat(
           Stream.succeed(current),
           Stream.fromSubscription(subscription).pipe(
