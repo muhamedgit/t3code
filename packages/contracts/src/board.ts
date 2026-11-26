@@ -180,10 +180,21 @@ export const SprintUpdateInput = Schema.Struct({
   sprintId: SprintId,
   name: Schema.optional(TrimmedNonEmptyString),
   goal: Schema.optional(Schema.NullOr(Schema.String)),
-  state: Schema.optional(SprintState),
+  state: Schema.optional(
+    SprintState.annotate({
+      description:
+        "active starts it (one active sprint per board) and records startsAt; closed completes it and records endsAt.",
+    }),
+  ),
   startsAt: Schema.optional(Schema.NullOr(IsoDateTime)),
   endsAt: Schema.optional(Schema.NullOr(IsoDateTime)),
   order: Schema.optional(NonNegativeInt),
+  carryOverTo: Schema.optional(
+    SprintId.annotate({
+      description:
+        "When closing: the open sprint that receives tickets not done. Omit to send them to the backlog.",
+    }),
+  ),
 });
 export type SprintUpdateInput = typeof SprintUpdateInput.Type;
 
@@ -191,7 +202,7 @@ export type SprintUpdateInput = typeof SprintUpdateInput.Type;
 export const BoardSubscribeInput = Schema.Struct({ projectId: ProjectId });
 export type BoardSubscribeInput = typeof BoardSubscribeInput.Type;
 
-const BOARD_RPC_ERROR_KINDS = ["not_found", "failed"] as const;
+const BOARD_RPC_ERROR_KINDS = ["not_found", "conflict", "failed"] as const;
 
 /** The wire error for board RPCs; server-side service errors map onto it. */
 export class BoardRpcError extends Schema.TaggedError<BoardRpcError>()("BoardRpcError", {

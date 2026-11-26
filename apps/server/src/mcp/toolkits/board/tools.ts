@@ -192,7 +192,7 @@ const CreateSprintTool = Tool.make("create_sprint", {
 
 const UpdateSprintTool = Tool.make("update_sprint", {
   description:
-    "Rename, reschedule or reorder a sprint, or set its state (planned, active, closed).",
+    "Rename, reschedule or reorder a sprint, or set its state. One sprint can be active at a time. Closing moves tickets not done to carryOverTo, or the backlog.",
   parameters: SprintUpdateInput,
   success: Sprint,
   failure: BoardToolError,
