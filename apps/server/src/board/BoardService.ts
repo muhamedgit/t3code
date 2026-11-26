@@ -110,6 +110,27 @@ function mergeLinks(
   return { threads, pullRequests };
 }
 
+/**
+ * A short ticket key prefix from a project's name: initials for three words or more, else the
+ * first word's first three letters plus the initials of the rest (`PwnPilot` gives `PWNP`,
+ * `sentineldev-scratch` gives `SENS`). Falls back to the default when nothing usable is left.
+ */
+export function ticketKeyPrefix(projectTitle: string): string {
+  const words = projectTitle
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word.length > 0);
+  const [first = "", ...rest] = words;
+  const prefix = (
+    words.length >= 3
+      ? words.map((word) => word[0]).join("")
+      : first.slice(0, 3) + rest.map((word) => word[0]).join("")
+  )
+    .toUpperCase()
+    .slice(0, 5);
+  return prefix.length >= 2 ? prefix : DEFAULT_TICKET_KEY_PREFIX;
+}
+
 /** Column order: position first, then age, so tickets that share a position keep a stable order. */
 function byColumnOrder(a: TicketRow, b: TicketRow): number {
   return a.order - b.order || a.createdAt.localeCompare(b.createdAt);
@@ -120,12 +141,18 @@ function nextOrder(rows: ReadonlyArray<{ readonly order: number }>): number {
   return rows.reduce((max, row) => Math.max(max, row.order + 1), 0);
 }
 
+export interface BoardStateOptions {
+  /** Include archived tickets; the live board leaves them out. */
+  readonly includeArchived?: boolean;
+}
+
 export class BoardService extends Context.Service<
   BoardService,
   {
     readonly ensureBoard: (input: BoardEnsureInput) => Effect.Effect<Board, BoardServiceError>;
     readonly getState: (
       boardId: BoardId,
+      options?: BoardStateOptions,
     ) => Effect.Effect<Option.Option<BoardState>, BoardServiceError>;
     readonly getStateByProject: (
       projectId: BoardEnsureInput["projectId"],
@@ -148,9 +175,14 @@ const make = Effect.gen(function* () {
 
   const nowIso = Effect.map(DateTime.now, DateTime.formatIso);
 
-  const buildState = Effect.fn("BoardService.buildState")(function* (boardRow: BoardRow) {
+  const buildState = Effect.fn("BoardService.buildState")(function* (
+    boardRow: BoardRow,
+    options?: BoardStateOptions,
+  ) {
     const sprints = yield* store.listSprints(boardRow.id);
-    const tickets = yield* store.listTickets(boardRow.id);
+    const tickets = yield* store.listTickets(boardRow.id, {
+      includeArchived: options?.includeArchived === true,
+    });
     return {
       board: store.toBoard(boardRow),
       sprints: sprints.map(store.toSprint),
@@ -189,6 +221,21 @@ const make = Effect.gen(function* () {
       ),
     );
 
+  /** A ticket's sprint must exist on the ticket's own board; null is the backlog. */
+  const requireSprintOnBoard = Effect.fn("BoardService.requireSprintOnBoard")(function* (
+    boardId: BoardId,
+    sprintId: SprintId | null,
+  ) {
+    if (sprintId === null) return;
+    const sprint = yield* store.getSprint(sprintId);
+    if (Option.isNone(sprint)) return yield* new SprintNotFoundError({ sprintId });
+    if (sprint.value.boardId !== boardId) {
+      return yield* new SprintConflictError({
+        reason: `Sprint ${sprintId} belongs to another project's board.`,
+      });
+    }
+  });
+
   const projectOf = (boardId: BoardId) =>
     store.getBoard(boardId).pipe(Effect.map(Option.map((row) => row.projectId)));
 
@@ -211,10 +258,13 @@ const make = Effect.gen(function* () {
     return store.toBoard(row);
   });
 
-  const getState = Effect.fn("BoardService.getState")(function* (boardId: BoardId) {
+  const getState = Effect.fn("BoardService.getState")(function* (
+    boardId: BoardId,
+    options?: BoardStateOptions,
+  ) {
     const boardRow = yield* store.getBoard(boardId);
     if (Option.isNone(boardRow)) return Option.none<BoardState>();
-    return Option.some(yield* buildState(boardRow.value));
+    return Option.some(yield* buildState(boardRow.value, options));
   });
 
   const getStateByProject = Effect.fn("BoardService.getStateByProject")(function* (
@@ -231,6 +281,7 @@ const make = Effect.gen(function* () {
     const token = yield* randomToken;
     const status = input.status ?? "todo";
     const sprintId = input.sprintId ?? null;
+    yield* requireSprintOnBoard(input.boardId, sprintId);
     const column = (yield* store.listTickets(input.boardId)).filter(
       (t) => t.status === status && t.sprintId === sprintId,
     );
@@ -282,6 +333,7 @@ const make = Effect.gen(function* () {
     const sprintId = input.sprintId === undefined ? current.sprintId : input.sprintId;
     const changesColumn = status !== current.status || sprintId !== current.sprintId;
     if (input.order === undefined && !changesColumn) return current;
+    if (sprintId !== current.sprintId) yield* requireSprintOnBoard(current.boardId, sprintId);
     const now = yield* nowIso;
     const siblings = (yield* store.listTickets(current.boardId))
       .filter((t) => t.id !== current.id && t.status === status && t.sprintId === sprintId)
@@ -346,7 +398,8 @@ const make = Effect.gen(function* () {
   /**
    * Starting a sprint records `startsAt` and is refused while another sprint is active. Closing it
    * records `endsAt` and moves its tickets that are not done to `carryOverTo`, or the backlog,
-   * last in their columns there.
+   * last in their columns there. Reopening a closed sprint keeps its first `startsAt` and clears
+   * `endsAt`; tickets moved out at close stay where they went.
    */
   const updateSprint = Effect.fn("BoardService.updateSprint")(function* (input: SprintUpdateInput) {
     const found = yield* store.getSprint(input.sprintId);
@@ -396,7 +449,12 @@ const make = Effect.gen(function* () {
       ...(input.name === undefined ? {} : { name: input.name }),
       ...(input.goal === undefined ? {} : { goal: input.goal }),
       state,
-      startsAt: input.startsAt !== undefined ? input.startsAt : starting ? now : current.startsAt,
+      startsAt:
+        input.startsAt !== undefined
+          ? input.startsAt
+          : starting && (!reopening || current.startsAt === null)
+            ? now
+            : current.startsAt,
       endsAt:
         input.endsAt !== undefined
           ? input.endsAt

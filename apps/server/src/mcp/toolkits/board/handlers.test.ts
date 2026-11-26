@@ -3,6 +3,7 @@ import {
   type OrchestrationProjectShell,
   ProjectId,
   ProviderInstanceId,
+  SprintId,
   ThreadId,
   TicketId,
 } from "@t3tools/contracts";
@@ -67,7 +68,8 @@ const makeHarness = Effect.fn("makeBoardToolkitHarness")(function* () {
       getShell: (id) => Effect.succeed(id === PROJECT_ID ? Option.some(project) : Option.none()),
     }),
     Layer.mock(Orchestrator.OrchestratorV2)({
-      getThreadShell: (id) => Effect.succeed(McpToolAccessTestkit.liveThreadShell(id)),
+      getThreadShell: (id) =>
+        Effect.succeed(id === THREAD_ID ? McpToolAccessTestkit.liveThreadShell(id) : null),
     }),
     McpToolAccessTestkit.liveThreadsLayer,
   );
@@ -99,7 +101,7 @@ describe("board toolkit handlers", () => {
       Effect.gen(function* () {
         const { hub, call } = yield* makeHarness();
         const subscribed = yield* Deferred.make<void>();
-        const watcher = yield* hub.watch(PROJECT_ID).pipe(
+        const watcher = yield* hub.watch(PROJECT_ID, { title: project.title }).pipe(
           Stream.tap(() => Deferred.succeed(subscribed, undefined)),
           Stream.take(2),
           Stream.runCollect,
@@ -109,7 +111,7 @@ describe("board toolkit handlers", () => {
 
         const ticket = yield* call("create_ticket", { title: "Wire the board UI" });
         expect(ticket).toMatchObject({
-          key: "SENT-1",
+          key: "PRO-1",
           title: "Wire the board UI",
           status: "todo",
           priority: "none",
@@ -122,7 +124,7 @@ describe("board toolkit handlers", () => {
 
         const board = yield* call("read_board", {});
         expect(board.board.projectId).toBe(PROJECT_ID);
-        expect(board.tickets.map((t) => t.key)).toEqual(["SENT-1"]);
+        expect(board.tickets.map((t) => t.key)).toEqual(["PRO-1"]);
       }),
     ),
   );
@@ -161,6 +163,9 @@ describe("board toolkit handlers", () => {
         expect(archived.archivedAt).not.toBeNull();
         expect((yield* call("read_board", {})).tickets).toEqual([]);
 
+        const listed = yield* call("read_board", { includeArchived: true });
+        expect(listed.tickets.map((t) => t.id)).toEqual([ticket.id]);
+
         const restored = yield* call("archive_ticket", { ticketId: ticket.id, archived: false });
         expect(restored.archivedAt).toBeNull();
       }),
@@ -196,6 +201,19 @@ describe("board toolkit handlers", () => {
           yield* call("move_ticket", {
             ticketId: TicketId.make("ticket_missing"),
             status: "done",
+          }).pipe(Effect.flip),
+        ).toMatchObject({ _tag: "BoardRpcError", kind: "not_found" });
+        const ticket = yield* call("create_ticket", { title: "Link me" });
+        expect(
+          yield* call("link_ticket", {
+            ticketId: ticket.id,
+            addThreads: [ThreadId.make("thread-missing")],
+          }).pipe(Effect.flip),
+        ).toMatchObject({ _tag: "BoardRpcError", kind: "not_found" });
+        expect(
+          yield* call("create_ticket", {
+            title: "Lost",
+            sprintId: SprintId.make("sprint_missing"),
           }).pipe(Effect.flip),
         ).toMatchObject({ _tag: "BoardRpcError", kind: "not_found" });
       }),

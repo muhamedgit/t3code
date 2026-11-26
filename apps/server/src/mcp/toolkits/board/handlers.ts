@@ -1,4 +1,4 @@
-import type { ProjectId } from "@t3tools/contracts";
+import { BoardRpcError, type ProjectId, type ThreadId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 
@@ -38,18 +38,39 @@ const make = Effect.gen(function* () {
       .getShell(projectId)
       .pipe(Effect.orElseSucceed(() => Option.none()));
     if (Option.isNone(shell)) return yield* new BoardProjectNotFoundError({ projectId });
-    return projectId;
+    return { projectId, title: shell.value.title };
   });
 
-  const boardOf = (projectId: ProjectId) =>
-    hub.read(projectId).pipe(Effect.mapError(BoardHub.toBoardRpcError));
+  const boardOf = (
+    project: { readonly projectId: ProjectId; readonly title: string },
+    options?: { readonly includeArchived?: boolean },
+  ) =>
+    hub
+      .read(project.projectId, { title: project.title }, options)
+      .pipe(Effect.mapError(BoardHub.toBoardRpcError));
+
+  /** Threads named to link must exist; a typo would otherwise link nothing. */
+  const requireThreads = Effect.fn("BoardToolkit.requireThreads")(function* (
+    threadIds: ReadonlyArray<ThreadId>,
+  ) {
+    for (const threadId of threadIds) {
+      const shell = yield* engine.getThreadShell(threadId).pipe(Effect.orElseSucceed(() => null));
+      if (shell === null) {
+        return yield* new BoardRpcError({ kind: "not_found", reason: `No thread ${threadId}.` });
+      }
+    }
+  });
 
   /** A board change by id: the capability is checked first, since no project is resolved. */
   const change = <A, E>(effect: Effect.Effect<A, E>) => requireBoard.pipe(Effect.andThen(effect));
 
   return {
     read_board: McpToolAccess.reads((input) =>
-      resolveProject(input.projectId).pipe(Effect.flatMap(boardOf)),
+      resolveProject(input.projectId).pipe(
+        Effect.flatMap((project) =>
+          boardOf(project, { includeArchived: input.includeArchived === true }),
+        ),
+      ),
     ),
     create_ticket: McpToolAccess.writesWithCapability(({ projectId, ...ticket }) =>
       Effect.gen(function* () {
@@ -75,6 +96,7 @@ const make = Effect.gen(function* () {
           input.removePullRequests,
         ].some((links) => links !== undefined && links.length > 0);
         if (!named && scope.thread === undefined) return yield* new BoardLinkTargetRequiredError();
+        yield* requireThreads(input.addThreads ?? []);
         const links =
           named || scope.thread === undefined
             ? input

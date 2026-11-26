@@ -213,7 +213,8 @@ starting records `startsAt`, closing records `endsAt` and moves tickets not done
 - Keybinding to open the board / new ticket (`keybindings.ts`).
 - MCP tool presentation entries (`t3McpToolPresentation.ts` + `t3ToolSummary.ts` cases +
   web/mobile translations) so agent board calls render with proper labels.
-- Archived-ticket view (restore from the UI; agents can already restore via `archive_ticket`).
+- Archived-ticket view (restore from the UI; agents can list them with
+  `read_board(includeArchived)` and restore via `archive_ticket`).
 - PR chips: open the PR (currently text only).
 - Completing a sprint from the UI always sends unfinished tickets to the backlog; offer the
   next sprint as well (agents can already pass `carryOverTo` to `update_sprint`).
